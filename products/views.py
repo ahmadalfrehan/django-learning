@@ -1,6 +1,8 @@
 from django.http import HttpResponse, JsonResponse, HttpRequest
 from django.shortcuts import redirect, render
 from django.views.generic import ListView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import permission_classes
 
 from rest_framework.response import Response
 from .models import Product
@@ -48,14 +50,32 @@ def myvi(request):
         return render(request=request, template_name='products/product.html', context={"formProd": form})
 
 
-@api_view(['GET'])
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def product_list_api(request):
-    products = Product.objects.all()
-    serializer = ProductSerializer(products, many=True)
-    return Response(serializer.data)
+    # ✅ Anyone logged in can view products
+    if request.method == 'GET':
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
+
+    # ✅ Only ADMIN can create
+    elif request.method == 'POST':
+        if not request.user.is_staff:
+            return Response(
+                {"error": "Only admins can create products"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = ProductSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET', 'PUT', 'PATCH', 'DELETE', 'POST'])
+@permission_classes([IsAuthenticated])
 def product_create_api(request, pk):
     try:
         product = Product.objects.get(pk=pk)
@@ -63,16 +83,13 @@ def product_create_api(request, pk):
         return Response({'error': 'Product Not Found'}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-        products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
+
+        serializer = ProductSerializer(product, many=True)
         return Response(serializer.data)
 
-    elif request.method == 'POST':
-        serializer = ProductSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=200)
-        return Response(serializer.errors, status=400)
+    if not request.user.is_staff:
+        return Response({"error": "only admin can do this"}, status=status.HTTP_403_FORBIDDEN)
+
     elif request.method == 'PATCH':
         serializer = ProductSerializer(
             product, data=request.data, partial=True)
@@ -80,6 +97,7 @@ def product_create_api(request, pk):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     elif request.method == 'PUT':
         serializer = ProductSerializer(product, data=request.data)
         if serializer.is_valid():
