@@ -56,7 +56,7 @@ def product_list_api(request):
     # ✅ Anyone logged in can view products
     if request.method == 'GET':
         products = Product.objects.all()
-        serializer = ProductSerializer(products, many=True)
+        serializer = ProductSerializer(products,many=True)
         return Response(serializer.data)
 
     # ✅ Only ADMIN can create
@@ -73,26 +73,23 @@ def product_list_api(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['GET', 'PUT', 'PATCH', 'DELETE', 'POST'])
+@api_view(['GET', 'PUT', 'PATCH', 'DELETE'])
 @permission_classes([IsAuthenticated])
 def product_create_api(request, pk):
     try:
         product = Product.objects.get(pk=pk)
-    except product.DoesNotExist:
+    except Product.DoesNotExist:
         return Response({'error': 'Product Not Found'}, status=status.HTTP_404_NOT_FOUND)
 
     if request.method == 'GET':
-
-        serializer = ProductSerializer(product, many=True)
+        serializer = ProductSerializer(product)
         return Response(serializer.data)
 
     if not request.user.is_staff:
         return Response({"error": "only admin can do this"}, status=status.HTTP_403_FORBIDDEN)
 
     elif request.method == 'PATCH':
-        serializer = ProductSerializer(
-            product, data=request.data, partial=True)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -103,7 +100,8 @@ def product_create_api(request, pk):
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.error, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     elif request.method == 'DELETE':
         product.delete()
         return Response({"message": "Product deleted"}, status=status.HTTP_204_NO_CONTENT)
