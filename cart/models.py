@@ -4,13 +4,14 @@ from django.db import models
 
 
 class Cart(models.Model):
-    user = models.ForeignKey(
-        'users.CustomUser', on_delete=models.CASCADE, related_name='carts')
+    user = models.OneToOneField(
+        'users.CustomUser', on_delete=models.CASCADE, related_name='cart')
     created_at = models.DateTimeField(auto_now_add=True)
     session_id = models.CharField(max_length=255, null=True, blank=True)
 
     def total(self):
         return sum(item.total_price() for item in self.items.all())
+
 
 
 class CartItem(models.Model):

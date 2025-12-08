@@ -10,7 +10,7 @@ class Category(models.Model):
         'self', on_delete=models.SET_NULL,
         null=True, blank=True, related_name='children'
     )
-
+     
     class Meta:
         verbose_name_plural = "Categories"
 
@@ -18,6 +18,7 @@ class Category(models.Model):
 
 class Product(models.Model):
     name = models.CharField(max_length=100)
+    
     price = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField()
     category = models.ForeignKey(
