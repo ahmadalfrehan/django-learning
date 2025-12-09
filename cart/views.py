@@ -29,3 +29,28 @@ class CartApi(APIView):
         cart, created = Cart.objects.get_or_create(user=request.user)
         serializer = CartSerializer(cart)
         return Response(serializer.data)
+
+
+class AddtoCartApi(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        variant_id = request.data.get("variant_id")
+        quantity = request.data.get("quantity")
+        if not variant_id:
+            return Response({"Error": "variant id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        variant = get_object_or_404(ProductVariant, id=variant_id)
+        if variant.stock < quantity:
+            return Response({"Error": "not enough quantity"}, status=status.HTTP_400_BAD_REQUEST)
+        cart, created = Cart.objects.get_or_create(user=user)
+        cart_item, item_created = CartItem.objects.get_or_create(
+            cart=cart, varient=variant, defaults={"quantity": quantity})
+        if not item_created:
+            new_quantity = cart_item.quantity+quantity
+            if variant.stock < new_quantity:
+                return Response({"error": "NOT ENOUGH STOCK for this quantity"}, status=status.HTTP_400_BAD_REQUEST)
+            cart_item.quantity = new_quantity
+            cart_item.save()
+        serializer = CartSerializer(cart)
+        return Response(serializer.data, status=status.HTTP_200_OK)
