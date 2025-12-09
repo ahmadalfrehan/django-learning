@@ -61,11 +61,11 @@ class AddtoCartApi(APIView):
 
 
 @api_view(['POST'])
-@permission_classes[IsAuthenticated]
+@permission_classes([IsAuthenticated])
 def checkout(request):
     user = request.user
-    variant_id = request.data.get("variant_id")
-    quantity = request.data.get("quantity")
+    # variant_id = request.data.get("variant_id")
+    # quantity = request.data.get("quantity")
     try:
         cart = Cart.objects.get(user=user)
     except Cart.DoesNotExist:
@@ -75,26 +75,26 @@ def checkout(request):
         return Response({"Error": "cart has not item"}, status=400)
     with transaction.atomic():
         for item in cart_item:
-            if item.variant.stock < item.quantity:
+            if item.varient.stock < item.quantity:
                 return Response({
                     "error": f"Not enough stock for {item.varient.product.name}"
                 }, status=400)
 
         order = Order.objects.create(
             user=user,
-            address=user.default_address,
+            address=user.bio,
             total_price=cart.total()
         )
         for item in cart_item:
             orderitem = OrderItem.objects.create(
                 order=order,
-                variant_id=item.variant,
+                variant_id=item.varient.id,
                 quantity=item.quantity,
-                price=item.variant.price
+                price=item.varient.price
             )
 
-            item.variant.stock -= item.quantity
-            item.variant.save()
+            item.varient.stock -= item.quantity
+            item.varient.save()
         cart.items.all().delete()
 
     serializer = OrderSerializer(order)

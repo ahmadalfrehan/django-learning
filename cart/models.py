@@ -22,4 +22,4 @@ class CartItem(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     def total_price(self):
-        return self.variant.price * self.quantity
+        return self.varient.price * self.quantity
