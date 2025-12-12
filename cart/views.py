@@ -71,7 +71,8 @@ def checkout(request):
     except Cart.DoesNotExist:
         return Response({"error": "Cart not found"}, status=status.HTTP_404_NOT_FOUND)
     cart_item = cart.items.all()
-    if not cart_item:
+    if not cart.items.exists():
+    # if not cart_item:
         return Response({"Error": "cart has not item"}, status=400)
     with transaction.atomic():
         for item in cart_item:
